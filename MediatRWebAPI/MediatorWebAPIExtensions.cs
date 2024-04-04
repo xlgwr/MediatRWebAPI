@@ -72,10 +72,11 @@ namespace MediatRWebAPI
 #if NET7_0_OR_GREATER
             Func<IMediator, TRequest, Task<TResponse>> rquestAsParamtersFunc = async Task<TResponse> ([FromServices] IMediator mediator, [AsParameters] TRequest request) =>
 #else
+               // net6.0无AsParameters特性
                //TRequest 需要实现方法：
                //https://learn.microsoft.com/zh-cn/aspnet/core/fundamentals/minimal-apis?view=aspnetcore-6.0#custom-binding
             Func<IMediator, TRequest, Task<TResponse>> rquestAsParamtersFunc = async Task<TResponse> ([FromServices] IMediator mediator, TRequest request) =>
- #endif
+#endif
 
             {
                 return await mediator.Send(request);
