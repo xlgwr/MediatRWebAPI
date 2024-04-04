@@ -9,7 +9,10 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(o =>
+{
+    
+});
 builder.Services.AddMediatR(typeof(TestRequestMessage1Handler).Assembly);
 builder.Services.AddAuthentication();
 builder.Services.AddAuthorization();
@@ -43,8 +46,10 @@ app.MapGet("/weatherforecast", () =>
     return forecast;
 })
 .WithName("GetWeatherForecast")
-.WithOpenApi();
-
+#if NET7_0_OR_GREATER
+.WithOpenApi()
+#endif
+;
 app.MapMediatorWebAPIs(typeof(CreateCategory).Assembly);
 
 app.Run();

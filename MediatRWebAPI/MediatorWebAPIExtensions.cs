@@ -3,6 +3,7 @@ using MediatRApplication;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using System;
 using System.Reflection;
 using System.Xml.Linq;
 
@@ -64,50 +65,50 @@ namespace MediatRWebAPI
         /// <param name="requestTypeName"></param>
         internal static void MapMediatorSendApi<TRequest, TResponse>(IEndpointRouteBuilder app, string requestTypeName) where TRequest : IRequest<TResponse>
         {
+            Func<IMediator, TRequest, Task<TResponse>> rquestFromBodyFunc = async Task<TResponse> ( [FromServices] IMediator mediator, [FromBody] TRequest request) =>
+            {
+                return await mediator.Send(request); 
+            };
+#if NET7_0_OR_GREATER
+            Func<IMediator, TRequest, Task<TResponse>> rquestAsParamtersFunc = async Task<TResponse> ([FromServices] IMediator mediator, [AsParameters] TRequest request) =>
+#else
+               //TRequest 需要实现方法：
+               //https://learn.microsoft.com/zh-cn/aspnet/core/fundamentals/minimal-apis?view=aspnetcore-6.0#custom-binding
+            Func<IMediator, TRequest, Task<TResponse>> rquestAsParamtersFunc = async Task<TResponse> ([FromServices] IMediator mediator, TRequest request) =>
+ #endif
+
+            {
+                return await mediator.Send(request);
+            };
+            RouteHandlerBuilder rb;
             if (requestTypeName.StartsWith("Create")) //Http Post
             {
                 var uri = new Uri(requestTypeName.Replace("Create", ""), UriKind.Relative);
-                app.MapPost(uri.ToString(), async ([FromServices] IMediator mediator, [FromBody] TRequest request) =>
-                {
-                    TResponse response = await mediator.Send(request);
-                    return Results.Created(uri, response);
-                }).WithName(requestTypeName).WithOpenApi();
+                rb= app.MapPost(uri.ToString(), rquestFromBodyFunc).WithName(requestTypeName);
             }
             else if (requestTypeName.StartsWith("Read")) //Http Get
             {
                 var uri = new Uri(requestTypeName.Replace("Read", ""), UriKind.Relative);
-                app.MapGet(uri.ToString(), async ([FromServices] IMediator mediator, TRequest request) =>
-                {
-                    TResponse response = await mediator.Send(request);
-                    return Results.Ok(response);
-                }).WithName(requestTypeName).WithOpenApi();
+                rb = app.MapGet(uri.ToString(), rquestAsParamtersFunc).WithName(requestTypeName);
             }
             else if (requestTypeName.StartsWith("Update")) //Http Put
             {
                 var uri = new Uri(requestTypeName.Replace("Update", ""), UriKind.Relative);
-                app.MapPut(uri.ToString(), async ([FromServices] IMediator mediator, [FromBody] TRequest request) =>
-                {
-                    TResponse response = await mediator.Send(request);
-                    return Results.Ok(response);
-                }).WithName(requestTypeName).WithOpenApi();
+                rb = app.MapPut(uri.ToString(), rquestFromBodyFunc).WithName(requestTypeName);
             }
             else if (requestTypeName.StartsWith("Delete")) //Http Delete
             {
                 var uri = new Uri(requestTypeName.Replace("Delete", ""), UriKind.Relative);
-                app.MapDelete(uri.ToString(), async ([FromServices] IMediator mediator, [FromBody] TRequest request) =>
-                {
-                    TResponse response = await mediator.Send(request);
-                    return Results.NoContent();
-                }).WithName(requestTypeName).WithOpenApi();
+                rb = app.MapDelete(uri.ToString(), rquestFromBodyFunc).WithName(requestTypeName);
             }
             else  //如不匹配则生成MediatR Send WebAPI接口
             {
-                app.MapPost("/mediatr/send/" + requestTypeName, async ([FromServices] IMediator mediator, [FromBody] TRequest request) =>
-                {
-                    TResponse response = await mediator.Send(request);
-                    return Results.Ok(response);
-                }).WithName(requestTypeName).WithOpenApi();
+                rb = app.MapPost("/mediatr/send/" + requestTypeName, rquestFromBodyFunc).WithName(requestTypeName);
             }
+
+#if NET7_0_OR_GREATER
+            rb.WithOpenApi();
+#endif
         }
 
         /// <summary>
@@ -122,7 +123,11 @@ namespace MediatRWebAPI
             {
                 await mediator.Publish(notification);
                 return Results.Ok();
-            }).WithName(requestTypeName).WithOpenApi();
+            }).WithName(requestTypeName)
+#if NET7_0_OR_GREATER
+            .WithOpenApi()
+#endif
+            ;
         }
     }
 }
