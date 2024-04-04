@@ -76,7 +76,7 @@ namespace MediatRWebAPI
             else if (requestTypeName.StartsWith("Read")) //Http Get
             {
                 var uri = new Uri(requestTypeName.Replace("Read", ""), UriKind.Relative);
-                app.MapGet(uri.ToString(), async ([FromServices] IMediator mediator, [FromBody] TRequest request) =>
+                app.MapGet(uri.ToString(), async ([FromServices] IMediator mediator, TRequest request) =>
                 {
                     TResponse response = await mediator.Send(request);
                     return Results.Ok(response);

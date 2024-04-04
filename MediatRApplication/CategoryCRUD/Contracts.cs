@@ -16,7 +16,7 @@ namespace MediatRApplication.CategoryCRUD
         public string Message { get; set; }
     }
 
-    public class ReadCategory : IRequest<ReadCategoryResult>
+    public class ReadCategory : TryParseDD<ReadCategory>, IRequest<ReadCategoryResult>
     {
         public string Message { get; set; }
     }

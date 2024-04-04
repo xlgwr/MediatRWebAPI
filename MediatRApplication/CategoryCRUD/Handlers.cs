@@ -2,6 +2,18 @@
 
 namespace MediatRApplication.CategoryCRUD
 {
+    public class TestRequestMessage2Handler : IRequestHandler<ReadCategory, ReadCategoryResult>
+    {
+
+        public async Task<ReadCategoryResult> Handle(ReadCategory request, CancellationToken cancellationToken)
+        {
+            var testResponseMessage = new ReadCategoryResult();
+            testResponseMessage.Message = $"ACK:{request.Message},{DateTime.Now.ToString("HH:mm:ss")}";
+            return testResponseMessage;
+        }
+    }
+
+
     public class TestRequestMessage1Handler : IRequestHandler<CreateCategory, CreateCategoryResult>
     {
 
